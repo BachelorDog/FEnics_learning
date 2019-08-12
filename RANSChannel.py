@@ -42,7 +42,7 @@ V = FunctionSpace(channelFlow.mesh, 'CG', 2)
 u_test = TestFunction(V)
 u = TrialFunction(V)
 u_n = Function(V)
-u_ = Function(V)
+u_ = project(Expression("0.0", degree = 1), V)
 nut = Function(V)
 
 P = FiniteElement('CG', interval, 2)
@@ -54,14 +54,11 @@ k, w = TrialFunctions(T)
 
 T_n = Function(T)
 k_n, w_n = T_n.split()
-T_ = Function(T)
+T_ = project(Expression(("1e-7", "32000"), degree = 1), T)
 k_, w_ = T_.split()
 
-u_ = project(Constant("0.0"), V)
-k_ = project(Constant("1e-7"), V)
-w_ = project(Constant("32000"), V)
-
 dt = 0.01
+relax = 0.6
 delta = Constant(dt)
 
 gradP = Constant(channelFlow.frictionVelocity**2)
@@ -77,59 +74,45 @@ bc_u = DirichletBC(V, Constant(0.0), boundary)
 bc_k = DirichletBC(T.sub(0), Constant(0.0), boundary)
 bc_w = DirichletBC(T.sub(1), Expression("min(2.352e14,  6*mu/(beta*pow(abs(x[0])-1, 2)))", degree = 1, mu = channelFlow.mu, beta = channelFlow.beta), wboundary)
 
+F1 = (mu+k_/w_)*dot(grad(u), grad(u_test))*dx - gradP*u_test*dx
+
+F2 = (k_/w_)*dot(dot(grad(u_), grad(u_)), k_test)*dx - betaStar*k*w_*k_test*dx - (mu + sigmaStar*k_/w_)*dot(grad(k), grad(k_test))*dx + (mu + sigmaStar*k_/w_)*dot(grad(k), (k_test*n))*ds
+F3 = gamma*dot(dot(grad(u_), grad(u_)), w_test)*dx - beta*w*w_*w_test*dx - (mu + sigma*k_/w_)*dot(grad(w), grad(w_test))*dx + (mu + sigma*k_/w_)*dot(grad(w), (w_test*n))*ds
+
+F = F2 + F3
+
+a1 = lhs(F1)
+L1 = rhs(F1)
+
+a2 = lhs(F)
+L2 = rhs(F)
 
 for i in range(100):
-
-    F1 = (mu+k_/w_)*dot(grad(u), grad(u_test))*dx - gradP*u_test*dx
-
-    a1 = lhs(F1)
-    L1 = rhs(F1)
-
     A1 = assemble(a1)
-    b1 = assemble(L1)
-
     bc_u.apply(A1)
+
+    b1 = assemble(L1)
     bc_u.apply(b1)
 
     solve(A1, u_n.vector(), b1)
-    u_ = project(0.6*u_+0.4*u_n, V)
+    u_.vector()[:] = relax*u_.vector()[:] + (1-relax)*u_n.vector()[:]
+    if i%10 == 0:
+        plot(u_)
+        plt.show()
+        plot(nut)
+        plt.show()
 
     for j in range(20):
-        F2 = (k_/w_)*dot(dot(grad(u_), grad(u_)), k_test)*dx - betaStar*k*w_*k_test*dx - (mu + sigmaStar*k_/w_)*dot(grad(k), grad(k_test))*dx + (mu + sigmaStar*k_/w_)*dot(grad(k), (k_test*n))*ds
-        F3 = gamma*dot(dot(grad(u_), grad(u_)), w_test)*dx - beta*w*w_*w_test*dx - (mu + sigma*k_/w_)*dot(grad(w), grad(w_test))*dx + (mu + sigma*k_/w_)*dot(grad(w), (w_test*n))*ds
-
-        F = F2 + F3
-
-        a2 = lhs(F)
-        L2 = rhs(F)
-
         A2 = assemble(a2)
-        b2 = assemble(L2)
-
         bc_k.apply(A2)
         bc_w.apply(A2)
+    
+        b2 = assemble(L2)
         bc_k.apply(b2)
         bc_w.apply(b2)
-
-        solve(A2, T_n.vector(), b2)
-
-        T_.assign(T_n)
-        k_n, w_n = T_.split()
-
-        w_ = project(0.6*w_+0.4*w_n, V)
-        k_ = project(0.6*k_+0.4*k_n, V)        
-        nut = project(k_/w_, V)
         
-        res = residual(A2, T_n.vector(), b2)
-        #print("residual: ", res)
-
-    plot(u_)
-    plt.show()
-    # plot(k_)
-    # plt.show()
-    # plot(w_)
-    # plt.show()
-    plot(nut)
-    plt.show()
-
-    print(nut(0))
+        solve(A2, T_n.vector(), b2)
+        T_.vector()[:] = relax*T_.vector()[:] + (1-relax)*T_n.vector()[:]
+        k_, w_ = T_.split()
+      
+        nut = project(k_/w_, V)
