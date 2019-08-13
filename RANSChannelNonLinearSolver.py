@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from fenics import *
 from fenics_adjoint import *
+import numpy as np
 from numpy import arctan, array, power
 import matplotlib.pyplot as plt
 
@@ -40,30 +41,24 @@ def wboundary(x, on_boundary):
     return on_boundary or near(x[0], -1, tol) or near(x[0], 1, tol)
 
 V = FunctionSpace(channelFlow.mesh, 'CG', 2)
-u_test = TestFunction(V)
-u = TrialFunction(V)
-u_n = Function(V)
-u_ = project(Expression("0.0", degree = 1), V)
+yEpsilon = project(Constant("1.0"), V)
+control = Control(yEpsilon)
 nut = Function(V)
 
 P = FiniteElement('CG', interval, 2)
-element = MixedElement([P, P])
+element = MixedElement([P, P, P])
 T = FunctionSpace(channelFlow.mesh, element)
 
-k_test, w_test = TestFunctions(T)
-k, w = TrialFunctions(T)
+u_test, k_test, w_test = TestFunctions(T)
+u, k, w = TrialFunctions(T)
 
 T_n = Function(T)
-k_n, w_n = T_n.split()
-T_ = project(Expression(("1e-7", "32000"), degree = 1), T)
-k_, w_ = T_.split()
+u_n, k_n, w_n = T_n.split()
+T_ = project(Expression(("0.0", "1e-7", "32000"), degree = 1), T)
+u_, k_, w_ = T_.split()
 
-yEpsilon = project(Constant("1.0"), V)
-#control = Control(yEpsilon)
 
-dt = 0.01
 relax = 0.6
-delta = Constant(dt)
 
 gradP = Constant(channelFlow.frictionVelocity**2)
 
@@ -73,55 +68,37 @@ betaStar = Constant(channelFlow.betaStar)
 sigma = Constant(channelFlow.sigma)
 sigmaStar = Constant(channelFlow.sigmaStar)
 gamma = Constant(channelFlow.gamma)
-control = Control(gamma)
 
-bc_u = DirichletBC(V, Constant(0.0), boundary)
-bc_k = DirichletBC(T.sub(0), Constant(0.0), boundary)
-bc_w = DirichletBC(T.sub(1), Expression("min(2.352e14,  6*mu/(beta*pow(abs(x[0])-1, 2)))", degree = 1, mu = channelFlow.mu, beta = channelFlow.beta), wboundary)
+bc_u = DirichletBC(T.sub(0), Constant(0.0), boundary)
+bc_k = DirichletBC(T.sub(1), Constant(0.0), boundary)
+bc_w = DirichletBC(T.sub(2), Expression("min(2.352e14,  6*mu/(beta*pow(abs(x[0])-1, 2)))", degree = 1, mu = channelFlow.mu, beta = channelFlow.beta), wboundary)
+bc = [bc_u, bc_k, bc_w]
 
 F1 = (mu+k_/w_)*dot(grad(u), grad(u_test))*dx - gradP*u_test*dx
-
 F2 = (k_/w_)*dot(dot(grad(u_), grad(u_)), k_test)*dx - betaStar*k*w_*k_test*dx - (mu + sigmaStar*k_/w_)*dot(grad(k), grad(k_test))*dx + (mu + sigmaStar*k_/w_)*dot(grad(k), (k_test*n))*ds
 F3 = gamma*yEpsilon*dot(dot(grad(u_), grad(u_)), w_test)*dx - beta*w*w_*w_test*dx - (mu + sigma*k_/w_)*dot(grad(w), grad(w_test))*dx + (mu + sigma*k_/w_)*dot(grad(w), (w_test*n))*ds
 
-F = F2 + F3
+F = F1 + F2 + F3
 
-a1 = lhs(F1)
-L1 = rhs(F1)
+a = lhs(F)
+L = rhs(F)
 
-a2 = lhs(F)
-L2 = rhs(F)
+for i in range(1000):
+    solve(a == L, T_n, bc)
+    u_n, k_n, w_n = T_n.split()
+    T_.vector()[:] = 0.6*T_.vector()[:] + 0.4*T_n.vector()[:]
+    u_, k_, w_ = T_.split()
 
-for i in range(50):
-    A1 = assemble(a1)
-    bc_u.apply(A1)
-
-    b1 = assemble(L1)
-    bc_u.apply(b1)
-
-    res = residual(A1, u_.vector(), b1)
-    if res < 1e-5 and i > 10:
-        plot(u_)
-        plt.show()
+    update = project(u_n-u_, V)
+    error = np.linalg.norm(update.vector().get_local())
+    if error < 1e-6:
         break
 
-    solve(A1, u_n.vector(), b1)
-    u_.vector()[:] = relax*u_.vector()[:] + (1-relax)*u_n.vector()[:]
 
-    for j in range(20):
-        A2 = assemble(a2)
-        bc_k.apply(A2)
-        bc_w.apply(A2)
-    
-        b2 = assemble(L2)
-        bc_k.apply(b2)
-        bc_w.apply(b2)
-
-        solve(A2, T_n.vector(), b2)
-        T_.vector()[:] = relax*T_.vector()[:] + (1-relax)*T_n.vector()[:]
-        k_, w_ = T_.split()
-    
-        nut = project(k_/w_, V)
-
-#J = assemble(dot(u, u)*dx)
-#dJdEpsilon = compute_gradient(J, control)
+J = assemble(dot(u_, u_)*dx)
+dJdgamma = compute_gradient(J, control)
+# nut = project(k_/w_, V)
+# plot(T_n.sub(0))
+# plt.show()
+# plot(nut)
+# plt.show()
