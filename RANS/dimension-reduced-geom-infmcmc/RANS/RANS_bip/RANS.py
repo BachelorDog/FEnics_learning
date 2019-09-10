@@ -125,8 +125,8 @@ class RANS:
         self._scalar_zero = dl.Expression("0.")
         self._vector_zero = dl.Expression( ("0.", "0.") )
         # Use the DNS at the inflow
-        # self._datafile = "../DNS_data/PlaneJet_data_all.dat"
-        # self.u_fun, self.k_fun, self.e_fun = loadDNSData(self._datafile, l_star = .1, C_mu = 0.09, coflow = 0.0)
+        self._datafile = "../DNS_data/PlaneJet_data_all.dat"
+        self.u_fun, self.k_fun, self.e_fun = loadDNSData(self._datafile, l_star = .1, C_mu = 0.09, coflow = 0.0)
         
         # list of essential boundary conditions for the forward problem
         u_bc_inflow = dl.DirichletBC(self.Vh_STATE.sub(0), self.u_fun, self.geo.boundary_parts, self.geo.INLET)
@@ -657,15 +657,15 @@ if __name__ == '__main__':
     rans = RANS(nx=40,ny=80)
     rans.setup(seed)
 #     rans.test(SAVE=True,PLOT=False,chk_fd=True,h=1e-4)
-    map_f=rans.plot_soln()#get_MAP(rand_init=False)
+    map_f=rans.get_MAP(rand_init=False)
 #     f=dl.HDF5File(rans.mpi_comm,'./result/map_solution.h5',"r")
 #     map_f=dl.Function(rans.Vh[PARAMETER],name='parameter')
 #     f.read(map_f,'parameter')
 #     f.close()
-    # import matplotlib.pyplot as plt
-    # from util import matplot4dolfin
-    # matplot=matplot4dolfin()
-    # # fig=matplot.plot(map_f)
-    # # plt.colorbar(fig)
-    # # matplot.save(savepath='./result',filename='map_solution.png',bbox_inches='tight')
-    # # matplot.show()
+    import matplotlib.pyplot as plt
+    from util import matplot4dolfin
+    matplot=matplot4dolfin()
+    fig=matplot.plot(map_f)
+    plt.colorbar(fig)
+    matplot.save(savepath='./result',filename='map_solution.png',bbox_inches='tight')
+    matplot.show()
