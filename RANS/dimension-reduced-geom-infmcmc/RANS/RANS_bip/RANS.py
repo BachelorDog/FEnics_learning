@@ -234,7 +234,7 @@ class RANS:
         # 6. Set up the data misfit functional (i.e. the negative log likelihood)  
         self.misfit = DNSDataMisfit(self.Vh_STATE, self.Vhs, self.ess_bcs0, self._datafile, self.geo.dx(self.geo.DNS))
 #         # 7. Set up the inverse problem model, which consits of a pde, a prior, and a misfit
-#         self.model_stat = Model(self.pde,self.prior, self.misfit)
+        self.model_stat = Model(self.pde,self.prior, self.misfit)
 
     def _soln_adj(self,parameter=None):
         """
