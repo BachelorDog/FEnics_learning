@@ -1,0 +1,53 @@
+CBC.PDESys
+---------
+
+CBC.PDESys is a Python package, built on top of FEniCS, for specifying and
+solving large systems of nonlinear Partial Differential Equations (PDEs) with
+very compact, flexible and reusable code (see, e.g.,
+http://fenicsproject.org/featured/2011/pdesys.html). The package is completely
+general and targets any system of PDEs. For now we have focused development on
+Computational Fluid Dynamics in the subpackage CBC.CFD. The incompressible
+Navier-Stokes solvers that are currently implemented can be used for both
+laminar and variable viscosity turbulent flows, i.e., the Reynolds Averaged
+Navier-Stokes (RANS) equations. The fully coupled and segregated NS solvers work
+for steady or transient flows, utilizing either Newton or Picard iteration
+techniques. Implemented turbulence models are currently the standard k-epsilon,
+Spalart Allmaras, V2F or elliptic relaxation models. CBC.PDESys and its
+subpackage CBC.CFD are primarily being developed at the Center for Biomedical
+Computing at Simula Research Laboratory in Oslo, Norway. CBC.PDESys is
+distributed freely in the hope that it will be useful, but without any
+warranty. 
+
+More information about the FEniCS Project can be found at the address
+
+  http://www.fenicsproject.org/
+
+Background on the methodology used in this framework is presented in
+
+  http://arxiv.org/abs/1102.2933
+
+Copyright
+---------
+
+Contributions to CBC.PDESys made by employees of Simula Research
+Laboratory are copyright Simula Research Laboratory and the
+respective author(s).
+
+License
+-------
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+For details, refer to the file COPYING.
+
+Feedback, questions
+-------------------
+
+For questions, please contact
+
+  Mikael Mortensen <Mikael.Mortensen@ffi.no>
+
+Oslo, November 2011

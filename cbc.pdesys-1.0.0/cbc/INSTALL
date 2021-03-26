@@ -1,0 +1,17 @@
+Installation
+------------
+
+CBC.PDESys and subpackages depends on the latest version of FEniCS. To 
+obtain FEniCS on Ubuntu simply do
+
+  sudo apt-get install fenics
+
+Otherwise see www.fenicsproject.org/installation/installation.html
+
+CBC.PDESys also make use of python packages numpy, scipy and matplotlib.
+These packages can be installed on Ubuntu through
+
+  sudo apt-get install python-numpy python-scipy python-matplotlib
+
+To use CBC.PDESys, the top level directory (the directory this file lives
+in) needs to be added to the PYTHONPATH.
