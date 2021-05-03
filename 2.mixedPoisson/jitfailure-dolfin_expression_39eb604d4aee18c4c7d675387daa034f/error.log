@@ -1,0 +1,8 @@
+/tmp/tmpaqa26hpt/dolfin_expression_39eb604d4aee18c4c7d675387daa034f.cpp: In member function 'virtual void dolfin::dolfin_expression_39eb604d4aee18c4c7d675387daa034f::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const':
+/tmp/tmpaqa26hpt/dolfin_expression_39eb604d4aee18c4c7d675387daa034f.cpp:61:25: error: 'm' was not declared in this scope
+           values[0] = 1+m*(cos(2*pi*x[0])*sin(2*pi*x[1]));
+                         ^
+/tmp/tmpaqa26hpt/dolfin_expression_39eb604d4aee18c4c7d675387daa034f.cpp:61:25: note: suggested alternative: 'tm'
+           values[0] = 1+m*(cos(2*pi*x[0])*sin(2*pi*x[1]));
+                         ^
+                         tm
